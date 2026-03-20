@@ -14,13 +14,16 @@
 # ------------------------------------------------
 x-airflow-common: &airflow-common
   image: apache/airflow:2.9.2
+  env_file:
+    - .env
 
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres_airflow/airflow
-    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres_airflow/airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_DB_URL}
+    AIRFLOW__CELERY__RESULT_BACKEND: ${AIRFLOW_RESULT_BACKEND}
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    
 
   volumes:
     - ./dags:/opt/airflow/dags
@@ -51,16 +54,14 @@ services:
     image: postgres:15
     container_name: formula_one_postgres
 
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: formula_one_db
+    env_file:
+      - .env
 
     ports:
       - "5432:5432"
 
     volumes:
-      # volume cuva podatke tako da baza ostaje i posle restart-a
+      # volume cuva podatke tako da baza ostaje i posle 
       - postgres_formula_data:/var/lib/postgresql/data
 
       # init.sql se pokrece SAMO prvi put kada se baza kreira

@@ -1,36 +1,27 @@
 from airflow import DAG
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-from airflow.utils.task_group import TaskGroup 
-#grupise taskove
+from airflow.utils.task_group import TaskGroup
 from datetime import datetime, timedelta
 
 
-# =====================================================
-# DEFAULT ARGS
-# =====================================================
-
 default_args = {
     "owner": "teodora",
-    "retries": 2, #koliko puta pokusa ako padne
-    "retry_delay": timedelta(minutes=2), #pauza izmedju 
+    "retries": 2,
+    "retry_delay": timedelta(minutes=2),
 }
 
-# =====================================================
-# DAG
-# =====================================================
 
 with DAG(
-    dag_id="raw_to_staging", #ime 
+    dag_id="raw_to_staging",
     start_date=datetime(2024, 1, 1),
-    schedule_interval=None, #rucno se pokrece
-    catchup=False, #ne izvrsava stare datume
-    default_args=default_args
+    schedule_interval=None,
+    catchup=False,
+    default_args=default_args,
 ) as dag:
 
     # =================================================
-    # DIMENSIONS (parallel)
+    # DIMENSIONS (parallel group)
     # =================================================
-
     with TaskGroup("load_dimensions") as load_dimensions:
 
         load_circuits = SQLExecuteQueryOperator(
@@ -58,8 +49,8 @@ with DAG(
         )
 
     # =================================================
+    # SESSIONS (parallel group)
     # =================================================
-
     with TaskGroup("load_sessions") as load_sessions:
 
         load_fp = SQLExecuteQueryOperator(
@@ -83,7 +74,6 @@ with DAG(
     # =================================================
     # RACES
     # =================================================
-
     load_races = SQLExecuteQueryOperator(
         task_id="races",
         conn_id="postgres_formula",
@@ -91,44 +81,48 @@ with DAG(
     )
 
     # =================================================
-    # FACT PREP
+    # RESULTS 
     # =================================================
-
     load_results = SQLExecuteQueryOperator(
         task_id="results",
         conn_id="postgres_formula",
         sql="sql/staging/results.sql"
     )
 
-    load_pitstops = SQLExecuteQueryOperator(
-        task_id="pitstops",
-        conn_id="postgres_formula",
-        sql="sql/staging/pitstops.sql"
-    )
+    # =================================================
+    # FACT TABLES (parallel group)
+    # =================================================
+    with TaskGroup("load_fact_tables") as load_fact_tables:
 
-    load_driver_standings = SQLExecuteQueryOperator(
-        task_id="driver_standings",
-        conn_id="postgres_formula",
-        sql="sql/staging/driver_standings.sql"
-    )
+        load_pitstops = SQLExecuteQueryOperator(
+            task_id="pitstops",
+            conn_id="postgres_formula",
+            sql="sql/staging/pitstops.sql"
+        )
 
-    load_constructor_standings = SQLExecuteQueryOperator(
-        task_id="constructor_standings",
-        conn_id="postgres_formula",
-        sql="sql/staging/constructor_standings.sql"
-    )
+        load_driver_standings = SQLExecuteQueryOperator(
+            task_id="driver_standings",
+            conn_id="postgres_formula",
+            sql="sql/staging/driver_standings.sql"
+        )
+
+        load_constructor_standings = SQLExecuteQueryOperator(
+            task_id="constructor_standings",
+            conn_id="postgres_formula",
+            sql="sql/staging/constructor_standings.sql"
+        )
 
     # =================================================
     # DEPENDENCIES
     # =================================================
 
+    # dimensions + sessions paralelno → races
     load_dimensions >> load_races
-    load_sessions >> load_races
+    
+    load_races >> load_sessions
 
-    load_races >> load_results
+    # races → results
+    load_sessions >> load_results
 
-    load_results >> [
-        load_pitstops,
-        load_driver_standings,
-        load_constructor_standings
-    ]
+    # results → fact tables (paralelno)
+    load_results >> load_fact_tables
