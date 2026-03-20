@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.env/
+
+# Airflow
+logs/
+airflow.db
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Data files (NE uploaduj raw podatke)
+data/
+output_csv/
+files/
+db/
+plugins/
+# Database / local files
+*.db
+*.sqlite3
+
+# Env variables (passwordi, konekcije)
+.env
+
+# Docker (opciono)
+*.log
+
+# Pytest / cache
+.pytest_cache/
+sql/
+
+# Misc
+*.csv
