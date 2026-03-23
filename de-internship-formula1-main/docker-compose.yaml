@@ -211,7 +211,7 @@ services:
   # ------------------------------------------------
   # Zookeeper (Kafka dependency)
   # ------------------------------------------------
-  zookeeper:
+  zookeeper: 
     image: confluentinc/cp-zookeeper:7.3.3
     container_name: zookeeper
 
