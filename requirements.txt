@@ -1,0 +1,9 @@
+# Airflow provider packages koje koristiš
+apache-airflow-providers-postgres
+apache-airflow-providers-apache-kafka
+
+# Za povezivanje sa Postgres bazom
+psycopg2-binary
+
+# Za Kafka integraciju
+kafka-python

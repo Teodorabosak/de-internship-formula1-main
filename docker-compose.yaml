@@ -1,4 +1,4 @@
-# Docker Compose fajl za lokalni Data Engineering stack
+
 # Sadrži:
 # - PostgreSQL bazu za F1 podatke
 # - PostgreSQL bazu za Airflow metadata
@@ -110,7 +110,7 @@ services:
   # Kreira Airflow tabele i admin korisnika
   # ------------------------------------------------
   airflow-init:
-    image: airflow-custom:latest
+    <<: *airflow-common
     container_name: airflow_init
     command: >
       bash -c "airflow db init && airflow users create --username airflow --password airflow --firstname Admin --lastname User --role Admin --email admin@example.com"
